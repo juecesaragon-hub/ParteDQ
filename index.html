@@ -100,6 +100,17 @@ activarFirma("firmaAR");
 // Cargar datos desde URL (cuando lo abre el árbitro)
 const params = new URLSearchParams(window.location.search);
 if (params.get("modo") === "arbitro") {
+const firmaGuardada = params.get("firmaJA");
+if (firmaGuardada) {
+  const img = new Image();
+  img.onload = function(){
+    const canvas = document.getElementById("firmaJA");
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+  };
+  img.src = firmaGuardada;
+}
+document.getElementById("firmaJA").style.pointerEvents = "none";
   document.getElementById("btnEnviar").style.display="none";
   document.getElementById("competicion").value = params.get("competicion");
   document.getElementById("fecha").value = params.get("fecha");
@@ -115,8 +126,10 @@ if (params.get("modo") === "arbitro") {
 
 function enviarWhatsApp(){
 
-  // 🔴 PON AQUÍ LA URL REAL DONDE ESTÁ SUBIDO TU ARCHIVO
   const baseURL = "https://juecesaragon-hub.github.io/ParteDQ/";
+
+  // Convertir firma en imagen Base64
+  const firmaBase64 = document.getElementById("firmaJA").toDataURL("image/png");
 
   const parametros = new URLSearchParams({
     modo: "arbitro",
@@ -127,7 +140,8 @@ function enviarWhatsApp(){
     ja_nombre: ja_nombre.value,
     ja_regla: ja_regla.value,
     ja_hora: ja_hora.value,
-    ja_incidencia: ja_incidencia.value
+    ja_incidencia: ja_incidencia.value,
+    firmaJA: firmaBase64   // 👈 AQUÍ VA LA FIRMA
   });
 
   const enlaceFinal = baseURL + "?" + parametros.toString();
