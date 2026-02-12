@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parte de Descalificación</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body { font-family: Arial; padding: 15px; background:#f4f4f4; }
+h2 { text-align:center; }
+input, textarea, select {
+  width: 100%; padding: 8px; margin-bottom: 10px; font-size: 16px;
+}
+textarea { height: 80px; }
+canvas {
+  border:1px solid #000; width:100%; height:200px; background:white;
+}
+button {
+  width:100%; padding:12px; font-size:16px; margin-top:10px;
+  background:#007bff; color:white; border:none; border-radius:5px;
+}
+hr { margin:20px 0; }
+</style>
+</head>
+
+<body>
+
+<h2>PARTE DE DESCALIFICACIÓN</h2>
+
+<h3>Datos Generales</h3>
+<input id="competicion" placeholder="Competición">
+<input id="fecha" type="date">
+<input id="prueba" placeholder="Prueba">
+<input id="dorsal" placeholder="Dorsal">
+
+<hr>
+
+<h3>JUEZ AUXILIAR</h3>
+<input id="ja_nombre" placeholder="Nombre y apellidos">
+<input id="ja_regla" placeholder="Regla infringida">
+<input id="ja_hora" placeholder="Hora">
+<textarea id="ja_incidencia" placeholder="Incidencia"></textarea>
+
+<p>Firma Juez Auxiliar</p>
+<canvas id="firmaJA"></canvas>
+<button type="button" onclick="limpiarFirma('firmaJA')">Limpiar firma</button>
+
+<hr>
+
+<div id="bloqueArbitro">
+<h3>JUEZ ÁRBITRO</h3>
+<input id="ar_nombre" placeholder="Nombre y apellidos">
+
+<select id="ar_descalificado">
+  <option value="">Atleta descalificado</option>
+  <option>Sí</option>
+  <option>No</option>
+</select>
+
+<input id="ar_regla" placeholder="Regla">
+<input id="ar_fecha" type="date">
+<input id="ar_hora" type="time">
+<textarea id="ar_obs" placeholder="Observaciones"></textarea>
+
+<p>Firma Juez Árbitro</p>
+<canvas id="firmaAR"></canvas>
+<button type="button" onclick="limpiarFirma('firmaAR')">Limpiar firma</button>
+
+<button onclick="generarPDF()">📄 Guardar PDF</button>
+</div>
+
+<button id="btnEnviar" onclick="enviarWhatsApp()">📲 Enviar al Juez Árbitro por WhatsApp</button>
+
+<script>
+function activarFirma(id){
+  const c=document.getElementById(id),ctx=c.getContext("2d");
+  c.width=c.offsetWidth; c.height=c.offsetHeight;
+  let d=false;
+  function p(e){const r=c.getBoundingClientRect();
+    return {x:(e.touches?e.touches[0].clientX:e.clientX)-r.left,
+            y:(e.touches?e.touches[0].clientY:e.clientY)-r.top};}
+  c.addEventListener("mousedown",e=>{d=true;const o=p(e);ctx.beginPath();ctx.moveTo(o.x,o.y);});
+  c.addEventListener("mousemove",e=>{if(!d)return;const o=p(e);ctx.lineTo(o.x,o.y);ctx.stroke();});
+  c.addEventListener("mouseup",()=>d=false);
+  c.addEventListener("touchstart",e=>{d=true;const o=p(e);ctx.beginPath();ctx.moveTo(o.x,o.y);});
+  c.addEventListener("touchmove",e=>{e.preventDefault();if(!d)return;const o=p(e);ctx.lineTo(o.x,o.y);ctx.stroke();});
+  c.addEventListener("touchend",()=>d=false);
+}
+
+function limpiarFirma(id){
+  const c=document.getElementById(id);
+  c.getContext("2d").clearRect(0,0,c.width,c.height);
+}
+
+activarFirma("firmaJA");
+activarFirma("firmaAR");
+
+// Cargar datos desde URL (cuando lo abre el árbitro)
+const params = new URLSearchParams(window.location.search);
+if (params.get("modo") === "arbitro") {
+  document.getElementById("btnEnviar").style.display="none";
+  document.getElementById("competicion").value = params.get("competicion");
+  document.getElementById("fecha").value = params.get("fecha");
+  document.getElementById("prueba").value = params.get("prueba");
+  document.getElementById("dorsal").value = params.get("dorsal");
+  document.getElementById("ja_nombre").value = params.get("ja_nombre");
+  document.getElementById("ja_regla").value = params.get("ja_regla");
+  document.getElementById("ja_hora").value = params.get("ja_hora");
+  document.getElementById("ja_incidencia").value = params.get("ja_incidencia");
+} else {
+  document.getElementById("bloqueArbitro").style.display="none";
+}
+
+function enviarWhatsApp(){
+
+  // 🔴 PON AQUÍ LA URL REAL DONDE ESTÁ SUBIDO TU ARCHIVO
+  const baseURL = "https://tudominio.com/parte.html";
+
+  const parametros = new URLSearchParams({
+    modo: "arbitro",
+    competicion: competicion.value,
+    fecha: fecha.value,
+    prueba: prueba.value,
+    dorsal: dorsal.value,
+    ja_nombre: ja_nombre.value,
+    ja_regla: ja_regla.value,
+    ja_hora: ja_hora.value,
+    ja_incidencia: ja_incidencia.value
+  });
+
+  const enlaceFinal = baseURL + "?" + parametros.toString();
+
+  const mensaje = "Parte para completar:\n" + enlaceFinal;
+
+  window.location.href = "https://wa.me/?text=" + encodeURIComponent(mensaje);
+}
+
+async function generarPDF(){
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
+
+  pdf.text("PARTE DE DESCALIFICACIÓN",20,20);
+  pdf.text("Competición: "+competicion.value,20,30);
+  pdf.text("Juez Auxiliar: "+ja_nombre.value,20,40);
+  pdf.addImage(firmaJA.toDataURL(),"PNG",20,45,60,30);
+
+  pdf.addPage();
+  pdf.text("Juez Árbitro: "+ar_nombre.value,20,20);
+  pdf.text("Descalificado: "+ar_descalificado.value,20,26);
+  pdf.addImage(firmaAR.toDataURL(),"PNG",20,30,60,30);
+
+  pdf.save("parte_descalificacion.pdf");
+}
+</script>
+
+</body>
+</html>
