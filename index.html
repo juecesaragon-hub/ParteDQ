@@ -124,15 +124,44 @@ document.getElementById("firmaJA").style.pointerEvents = "none";
   document.getElementById("bloqueArbitro").style.display="none";
 }
 
+const id = params.get("id");
+
+if(id){
+
+  const datos = JSON.parse(localStorage.getItem("parte_"+id));
+
+  if(datos){
+
+    competicion.value = datos.competicion;
+    fecha.value = datos.fecha;
+    prueba.value = datos.prueba;
+    dorsal.value = datos.dorsal;
+    ja_nombre.value = datos.ja_nombre;
+    ja_regla.value = datos.ja_regla;
+    ja_hora.value = datos.ja_hora;
+    ja_incidencia.value = datos.ja_incidencia;
+
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.getElementById("firmaJA");
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img,0,0);
+    };
+    img.src = datos.firmaJA;
+
+    document.getElementById("firmaJA").style.pointerEvents="none";
+
+    document.getElementById("btnEnviar").style.display="none";
+    document.getElementById("bloqueArbitro").style.display="block";
+  }
+
+}
+
 function enviarWhatsApp(){
 
-  const baseURL = "https://juecesaragon-hub.github.io/ParteDQ/";
+  const id = Date.now().toString();
 
-  // Convertir firma en imagen Base64
-  const firmaBase64 = document.getElementById("firmaJA").toDataURL("image/png");
-
-  const parametros = new URLSearchParams({
-    modo: "arbitro",
+  const datos = {
     competicion: competicion.value,
     fecha: fecha.value,
     prueba: prueba.value,
@@ -141,14 +170,14 @@ function enviarWhatsApp(){
     ja_regla: ja_regla.value,
     ja_hora: ja_hora.value,
     ja_incidencia: ja_incidencia.value,
-    firmaJA: firmaBase64   // 👈 AQUÍ VA LA FIRMA
-  });
+    firmaJA: document.getElementById("firmaJA").toDataURL()
+  };
 
-  const enlaceFinal = baseURL + "?" + parametros.toString();
+  localStorage.setItem("parte_"+id, JSON.stringify(datos));
 
-  const mensaje = "Parte para completar:\n" + enlaceFinal;
+  const enlace = "https://juecesaragon-hub.github.io/ParteDQ/?id="+id;
 
-  window.location.href = "https://wa.me/?text=" + encodeURIComponent(mensaje);
+  window.location.href = "https://wa.me/?text="+encodeURIComponent(enlace);
 }
 
 async function generarPDF(){
